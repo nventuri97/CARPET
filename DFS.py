@@ -14,6 +14,7 @@ class DFS(Machine):
         #super constructor of Machine class imported from transitions
         super(model=self, states=states, initial='0').__init__()
         self.alphabet=alphabet
+        self.callback=callback
 
     #Method to generate a matrix which represent the transition function
     #needed to implement OT protocol
@@ -24,7 +25,11 @@ class DFS(Machine):
         transitions=self.get_transitions()
         trans_mat=np.zeros((self.states.__len__, transitions.__len__), int)
 
+        #Sorted transition by source state
         sorted_tran= sorted(transitions, key =itemgetter(1))
 
+        #For each state i check which transitions take to a new state
+        #and i build the new transition matrix
         for state in self.states:
-            #now i have to create the transition matrix
+            while(sorted_tran.__getitem__(1)==state):
+                trans_mat[int(state)][callback.index(sorted_tran.__getitem__(0))]=sorted_tran.__getitem__(2)
