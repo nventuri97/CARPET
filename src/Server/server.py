@@ -3,7 +3,7 @@
 from DFS import DFS
 from OTHandler import OTHandler
 from http.server import HTTPServer
-from SocketServer import ThreadingMixIn
+from socketserver import ThreadingMixIn
 import ssl, threading
 
 class ThreadedHTTPSServer(ThreadingMixIn, HTTPServer):
@@ -13,23 +13,24 @@ class ThreadedHTTPSServer(ThreadingMixIn, HTTPServer):
 states=["0", "1"]
 automata=DFS(states)
 
-automata.add_transitions('a_less', source="0", destination="0")
-automata.add_transitions('a_plus', "0", "1")
-automata.add_transitions('s_less', "0", "0")
-automata.add_transitions('s_plus', "0", "1")
-automata.add_transitions('v_less', "0", "0")
-automata.add_transitions('v_plus', "0", "1")
-automata.add_transitions('a_plus', "1", "1")
-automata.add_transitions('a_less', "1", "1")
-automata.add_transitions('s_plus', "1", "1")
-automata.add_transitions('v_plus', "1", "1")
-automata.add_transitions('v_less', "1", "1")
-automata.add_transitions('s_plus', "1", "0")
+automata.machine.add_transition('a_less', '0', '0')
+automata.machine.add_transition('a_plus', '0', '1')
+automata.machine.add_transition('s_less', '0', '0')
+automata.machine.add_transition('s_plus', '0', '1')
+automata.machine.add_transition('v_less', '0', '0')
+automata.machine.add_transition('v_plus', '0', '1')
+automata.machine.add_transition('a_plus', '1', '1')
+automata.machine.add_transition('a_less', '1', '1')
+automata.machine.add_transition('s_plus', '1', '1')
+automata.machine.add_transition('v_plus', '1', '1')
+automata.machine.add_transition('v_less', '1', '1')
+automata.machine.add_transition('s_plus', '1', '0')
 
 #Inizialization of HTTPS server
 server_address = ('localhost', 4443)
 otHandler=OTHandler(automata)
 httpd =ThreadedHTTPSServer(server_address, otHandler)
-httpd.socket = ssl.wrap_socket(httpd.socket, server_side=True, certfile='./cert.pem', ssl_version=ssl.PROTOCOL_TLS)
+httpd.socket = ssl.wrap_socket(httpd.socket, server_side=True, keyfile='./key.pem', certfile='./cert.pem', ssl_version=ssl.PROTOCOL_TLS)
 httpd.serve_forever()
 
+print("Server is working on port 4443")
