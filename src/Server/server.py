@@ -10,7 +10,7 @@ class ThreadedHTTPSServer(ThreadingMixIn, HTTPServer):
     pass
 
 #Inizialization of DFS and creation of the automata required
-states=["0", "1"]
+states=['0', '1']
 automata=DFS(states)
 
 automata.machine.add_transition('a_less', '0', '0')
@@ -31,6 +31,7 @@ server_address = ('localhost', 4443)
 otHandler=OTHandler(automata)
 httpd =ThreadedHTTPSServer(server_address, otHandler)
 httpd.socket = ssl.wrap_socket(httpd.socket, server_side=True, keyfile='./key.pem', certfile='./cert.pem', ssl_version=ssl.PROTOCOL_TLS)
-httpd.serve_forever()
 
 print("Server is working on port 4443")
+
+httpd.serve_forever()

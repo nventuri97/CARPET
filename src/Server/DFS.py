@@ -1,6 +1,6 @@
 from transitions import Machine
 import numpy as np
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 
 class DFS(object):
     
@@ -20,10 +20,10 @@ class DFS(object):
         #and character of the alphabet on column
 
         transitions=self.machine.get_transitions()
-        trans_mat=np.zeros((self.states.__len__, transitions.__len__), int)
+        trans_mat=np.zeros((len(self.states), len(transitions)), int)
 
         #Sorted transition by source state
-        sorted_tran= sorted(transitions, key =itemgetter(1))
+        sorted_tran= sorted(transitions, key=attrgetter('source'))
 
         #For each state i check which transitions take to a new state
         #and i build the new transition matrix
