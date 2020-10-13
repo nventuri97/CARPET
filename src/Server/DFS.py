@@ -11,7 +11,7 @@ class DFS(object):
 
     def __init__(self, states):
         self.states=states
-        self.machine=Machine(model=self, states=states, initial='0')
+        self.machine=Machine(model=self, states=states, initial='0', auto_transitions=False)
 
     #Method to generate a matrix which represent the transition function
     #needed to implement OT protocol
@@ -20,7 +20,7 @@ class DFS(object):
         #and character of the alphabet on column
 
         transitions=self.machine.get_transitions()
-        trans_mat=np.zeros((len(self.states), len(transitions)), int)
+        trans_mat=np.zeros((len(self.states), len(self.alphabet)), int)
 
         #Sorted transition by source state
         sorted_tran= sorted(transitions, key=attrgetter('source'))
@@ -28,5 +28,12 @@ class DFS(object):
         #For each state i check which transitions take to a new state
         #and i build the new transition matrix
         for state in self.states:
-            while(sorted_tran.__getitem__(1)==state):
-                trans_mat[int(state)][DFS.callback.index(sorted_tran.__getitem__(0))]=sorted_tran.__getitem__(2)
+            for trans in sorted_tran:
+                if trans.source==state :
+                    index=self.alphabet.index(trans.conditions[0].func)
+                    trans_mat[int(state)][index]=trans.dest
+                else:
+                    break
+            sorted_tran.reverse()
+        
+        print(trans_mat)
