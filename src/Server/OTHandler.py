@@ -1,8 +1,9 @@
 #Handler to execute the oblivious transfer on a given trace
 
 from http.server import SimpleHTTPRequestHandler
-import json
 from DFS import DFS
+import numpy as np
+import json
 import random
 
 class OTHandler(SimpleHTTPRequestHandler):
@@ -15,6 +16,7 @@ class OTHandler(SimpleHTTPRequestHandler):
         #to the execution of the OT
         self.automata=automata
         self.mat=self.automata.to_matrix()
+        print(self.mat)
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
@@ -22,15 +24,15 @@ class OTHandler(SimpleHTTPRequestHandler):
         if self.count==1 :
             self.FirstStateTransition()
         else:
-            KStateTransition()
+            self.KStateTransition()
 
     #First subprotocol of the run of OT on automata
     def FirstStateTransition(self):
-        Q_len=self.automata.states.__len__-1
+        Q_len=len(self.automata.states)-1
         r_a=random.randint(0, Q_len)
-        v=[]
+        v=np.zeros(Q_len)
         #Blinds element of vector v with the random generated
-        for i in range(0,self.automata.alphabet.__len__-1) :
+        for i in range(0,len(self.automata.states)-1) :
             v[i]=(self.mat[i][0]+r_a)%Q_len
 
         #Now i have to send the blinds vector to the client
