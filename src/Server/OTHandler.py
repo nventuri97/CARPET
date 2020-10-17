@@ -2,9 +2,9 @@
 
 from http.server import SimpleHTTPRequestHandler
 from DFS import DFS
+from base64 import b64encode, b64decode
 import numpy as np
-import json
-import random
+import json, random
 
 class OTHandler(SimpleHTTPRequestHandler):
 
@@ -26,10 +26,12 @@ class OTHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
+        #print(self)
         #Execution of OT
-        if self.k==0 :
+        if self.request_version:
             self.FirstStateTransition()
         else:
+            print("i'm here")
             self.KStateTransition()
 
     #First subprotocol of the run of OT on automata
@@ -50,7 +52,8 @@ class OTHandler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
         #Increment the transition number
-        self.k+=1
+        self.k=self.k+1
+        print(self.k)
 
     #Subprotocol for the k-th state transition
     def KStateTransition(self):
@@ -64,6 +67,10 @@ class OTHandler(SimpleHTTPRequestHandler):
         
         #Now i have to read data sent from client
         data=self.requestline()
+        data=b64decode(data)
+        e=data["ChiperText"]
+
+        
 
 
 class NumpyArrayEncoder(json.JSONEncoder):

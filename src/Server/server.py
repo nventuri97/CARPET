@@ -2,7 +2,7 @@
 
 from DFS import DFS
 from OTHandler import OTHandler
-from http.server import HTTPServer
+from http.server import HTTPServer, ThreadingHTTPServer
 from socketserver import ThreadingMixIn
 from functools import partial
 import ssl, threading
@@ -31,7 +31,7 @@ automata.machine.add_transition('s_less', '1', '0', 's(-)')
 #Inizialization of HTTPS server
 server_address = ('localhost', 4443)
 otHandler=partial(OTHandler, automata)
-httpd =ThreadedHTTPSServer(server_address, otHandler)
+httpd =ThreadingHTTPServer(server_address, otHandler)
 httpd.socket = ssl.wrap_socket(httpd.socket, server_side=True, keyfile='./key.pem', certfile='./cert.pem', ssl_version=ssl.PROTOCOL_TLS)
 
 print("Server is working on port 4443")
