@@ -3,11 +3,16 @@
 from http.server import SimpleHTTPRequestHandler
 from DFS import DFS
 from base64 import b64encode, b64decode
+from http.cookies import SimpleCookie
+import redis
 import numpy as np
-import json, random
+import json, random, uuid
 
 class OTHandler(SimpleHTTPRequestHandler):
 
+    #Redis host and redis port
+    redis_host='localhost'
+    redis_port=6379
     #Transition number
     k=0
     #Random number array
@@ -23,16 +28,19 @@ class OTHandler(SimpleHTTPRequestHandler):
         #Cardinality of alphabet
         self.Al_len=len(self.automata.alphabet)
         random.seed()
+        self.redisconn=redis.StrictRedis(host=self.redis_host, port=self.redis_port, password="", decode_responses=True)
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
-        #print(self)
+        #cookie=self.headers.get('Cookie')
+        #suid=cookie['suid']
         #Execution of OT
-        if self.request_version:
+        if self.k==0:
             self.FirstStateTransition()
         else:
             print("i'm here")
             self.KStateTransition()
+
 
     #First subprotocol of the run of OT on automata
     def FirstStateTransition(self):
@@ -42,10 +50,17 @@ class OTHandler(SimpleHTTPRequestHandler):
         for i in range(0,self.Q_len):
             v[i]=(self.mat[i][0]+self.r_a[self.k])%self.Q_len
 
+        #Setting session cookie
+        suid=uuid.uuid4()
+        print(suid)
+        cookie=SimpleCookie()
+        cookie['suid']=suid
+
         #Now i have to send the blinds vector to the client
         #and the first transition is done
         self.send_response(200)
         self.send_header('content-type', 'data')
+        self.send_header('Set-Cookie', cookie['suid'].OutputString())
         self.end_headers()
         data={"CardState": self.Q_len, "BlindVector": v}
         data=json.dumps(data, cls=NumpyArrayEncoder).encode()

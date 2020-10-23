@@ -30,6 +30,8 @@ connection.request('GET', '/')
 
 #Server's response containing the blinded vector and cardinality of states set
 response=connection.getresponse()
+headers={'Cookie': response.headers['Set-Cookie']}
+print(headers)
 
 data=(response.read())
 data=json.loads(data)
@@ -43,4 +45,4 @@ binv=np.zeros(Q_len)
 binv[r_b]=1
 ciphertext= encrypt(binv)
 data=json.dumps({"ChiperText": ciphertext.decode('ascii')})
-connection.request('GET', '/', data.encode())
+connection.request('GET', '/', data.encode(), headers=headers)
