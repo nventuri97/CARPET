@@ -13,10 +13,6 @@ class OTHandler(SimpleHTTPRequestHandler):
     #Redis host and redis port
     redis_host='localhost'
     redis_port=6379
-    #Transition number
-    k=0
-    #Random number array
-    r_a=[]
 
     def __init__(self, automata, *args, **kwargs):
         #Automata defined in server which will use
@@ -28,17 +24,23 @@ class OTHandler(SimpleHTTPRequestHandler):
         #Cardinality of alphabet
         self.Al_len=len(self.automata.alphabet)
         random.seed()
-        self.redisconn=redis.StrictRedis(host=self.redis_host, port=self.redis_port, password="", decode_responses=True)
+        #Transition number
+        self.k=0
+        #Random number array
+        self.r_a=[]
+        #session uid
+        self.suid_str=''
+        #Connection to redis database
+        self.redis_client=redis.Redis(self.redis_host, self.redis_port)
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
-        #cookie=self.headers.get('Cookie')
-        #suid=cookie['suid']
+        cookie=self.headers.get('Cookie')
         #Execution of OT
-        if self.k==0:
+        if cookie==None :
             self.FirstStateTransition()
         else:
-            print("i'm here")
+            self.suid_str=cookie[5:]
             self.KStateTransition()
 
 
@@ -55,12 +57,13 @@ class OTHandler(SimpleHTTPRequestHandler):
         print(suid)
         cookie=SimpleCookie()
         cookie['suid']=suid
+        self.suid_str=cookie['suid'].OutputString()
 
         #Now i have to send the blinds vector to the client
         #and the first transition is done
         self.send_response(200)
         self.send_header('content-type', 'data')
-        self.send_header('Set-Cookie', cookie['suid'].OutputString())
+        self.send_header('Set-Cookie', self.suid_str)
         self.end_headers()
         data={"CardState": self.Q_len, "BlindVector": v}
         data=json.dumps(data, cls=NumpyArrayEncoder).encode()
@@ -68,24 +71,38 @@ class OTHandler(SimpleHTTPRequestHandler):
 
         #Increment the transition number
         self.k=self.k+1
-        print(self.k)
-
+        self.suid_str=self.suid_str[5:]
+        self.__storeData()
+        
+    
     #Subprotocol for the k-th state transition
     def KStateTransition(self):
+        self.__retrieveData()
         self.r_a.append(random.randint(0,self.Q_len))
+        print(self.r_a)
         #Blinding all the matrix element
         for i in range(0, self.Q_len):
             for j in range(0, self.Al_len):
-                self.mat[i][j]=(self.mat[i][j]+r_a[k])%self.Q_len
+                self.mat[i][j]=(self.mat[i][j]+self.r_a[self.k])%self.Q_len
             #Shift left of r_a(k-1) position
-            np.roll(mat[i], -self.r_a[k-1])
+            np.roll(self.mat[i], -self.r_a[self.k-1])
         
         #Now i have to read data sent from client
         data=self.requestline()
         data=b64decode(data)
         e=data["ChiperText"]
 
-        
+        self.__storeData()
+
+    #Store data in redis db to retrive them in the next GET request   
+    def __storeData(self):    
+        db_data={'r_a': self.r_a, 'k': self.k}
+        self.redis_client.hset('session:1', self.suid_str, json.dumps(db_data))
+
+    def __retrieveData(self):
+        db_data=json.loads(self.redis_client.hget('session:1', self.suid_str).decode('utf-8'))
+        self.r_a=db_data['r_a']
+        self.k=db_data['k']
 
 
 class NumpyArrayEncoder(json.JSONEncoder):
