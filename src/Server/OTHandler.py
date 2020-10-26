@@ -8,6 +8,9 @@ import redis
 import numpy as np
 import json, random, uuid
 
+from socket import error as SocketError
+import errno
+
 class OTHandler(SimpleHTTPRequestHandler):
 
     #Redis host and redis port
@@ -88,10 +91,12 @@ class OTHandler(SimpleHTTPRequestHandler):
             np.roll(self.mat[i], -self.r_a[self.k-1])
         
         #Now i have to read data sent from client
-        data=self.requestline()
-        data=b64decode(data)
-        e=data["ChiperText"]
-
+        length = int(self.headers.get('Content-length'))
+        data=self.rfile.read(length)
+        data=json.loads(data)
+        encrypted_v=b64decode(data["ChiperText"])
+        print(encrypted_v)
+        
         self.__storeData()
 
     #Store data in redis db to retrive them in the next GET request   
