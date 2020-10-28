@@ -36,4 +36,4 @@ class DFS(object):
                     break
             sorted_tran.reverse()
         
-        return trans_mat
+        return trans_mat.transpose() 

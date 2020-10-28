@@ -7,7 +7,7 @@ from http.cookies import SimpleCookie
 import redis
 import numpy as np
 import json, random, uuid
-
+from phe import paillier    
 from socket import error as SocketError
 import errno
 
@@ -50,9 +50,9 @@ class OTHandler(SimpleHTTPRequestHandler):
     #First subprotocol of the run of OT on automata
     def FirstStateTransition(self):
         self.r_a.append(random.randint(0, self.Q_len))
-        v=np.zeros(self.Q_len, int)
+        v=np.zeros(self.Al_len, int)
         #Blinds element of vector v with the random generated
-        for i in range(0,self.Q_len):
+        for i in range(0,self.Al_len):
             v[i]=(self.mat[i][0]+self.r_a[self.k])%self.Q_len
 
         #Setting session cookie
@@ -84,8 +84,8 @@ class OTHandler(SimpleHTTPRequestHandler):
         self.r_a.append(random.randint(0,self.Q_len))
         print(self.r_a)
         #Blinding all the matrix element
-        for i in range(0, self.Q_len):
-            for j in range(0, self.Al_len):
+        for i in range(0, self.Al_len):
+            for j in range(0, self.Q_len):
                 self.mat[i][j]=(self.mat[i][j]+self.r_a[self.k])%self.Q_len
             #Shift left of r_a(k-1) position
             np.roll(self.mat[i], -self.r_a[self.k-1])
@@ -93,10 +93,24 @@ class OTHandler(SimpleHTTPRequestHandler):
         #Now i have to read data sent from client
         length = int(self.headers.get('Content-length'))
         data=self.rfile.read(length)
-        data=json.loads(data)
-        encrypted_v=b64decode(data["ChiperText"])
-        print(encrypted_v)
-        
+        recive_data=json.loads(data)
+        puk=recive_data['PublicKey']
+        public_key=paillier.PaillierPublicKey(n=int(puk['n']))
+        encrypted_e=[paillier.EncryptedNumber(public_key, int(x[0]), int(x[1])) for x in recive_data['CipherText']]
+
+        #v is the encrypted vector obtained by multiplicating transition matrix to encrypted vector recived
+        enc_mean=np.mean(encrypted_e)
+        v_encrypt=np.dot(self.mat, encrypted_e)
+        print(v_encrypt)
+
+        self.send_response(200)
+        self.send_header('content-type', 'data')
+        self.send_header('Set-Cookie', 'suid='+self.suid_str)
+        self.end_headers()
+        data={}
+        data["BlindVector"]= [(str(x.ciphertext()), x.exponent) for x in v_encrypt]
+        self.wfile.write(json.dumps(data).encode())
+
         self.__storeData()
 
     #Store data in redis db to retrive them in the next GET request   
