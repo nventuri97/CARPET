@@ -9,7 +9,6 @@ import numpy as np
 import json, random, uuid
 from phe import paillier    
 from socket import error as SocketError
-import errno
 
 class OTHandler(SimpleHTTPRequestHandler):
 
@@ -33,6 +32,8 @@ class OTHandler(SimpleHTTPRequestHandler):
         self.r_a=[]
         #session uid
         self.suid_str=''
+        #trace length
+        self.t_len=0
         #Connection to redis database
         self.redis_client=redis.Redis(self.redis_host, self.redis_port)
         super().__init__(*args, **kwargs)
@@ -60,21 +61,15 @@ class OTHandler(SimpleHTTPRequestHandler):
         print(suid)
         cookie=SimpleCookie()
         cookie['suid']=suid
-        self.suid_str=cookie['suid'].OutputString()
+        self.suid_str=(cookie['suid'].OutputString())[5:]
 
         #Now i have to send the blinds vector to the client
         #and the first transition is done
-        self.send_response(200)
-        self.send_header('content-type', 'data')
-        self.send_header('Set-Cookie', self.suid_str)
-        self.end_headers()
+        
         data={"CardState": self.Q_len, "BlindVector": v}
-        data=json.dumps(data, cls=NumpyArrayEncoder).encode()
-        self.wfile.write(data)
+        self.__sendResponse(data)
 
         #Increment the transition number
-        self.k=self.k+1
-        self.suid_str=self.suid_str[5:]
         self.__storeData()
         
     
@@ -94,6 +89,7 @@ class OTHandler(SimpleHTTPRequestHandler):
         length = int(self.headers.get('Content-length'))
         data=self.rfile.read(length)
         recive_data=json.loads(data)
+        self.t_len=recive_data['TraceLength']
         puk=recive_data['PublicKey']
         public_key=paillier.PaillierPublicKey(n=int(puk['n']))
         encrypted_e=[paillier.EncryptedNumber(public_key, int(x[0]), int(x[1])) for x in recive_data['CipherText']]
@@ -101,18 +97,25 @@ class OTHandler(SimpleHTTPRequestHandler):
         #v is the encrypted vector obtained by multiplicating transition matrix to encrypted vector recived
         enc_mean=np.mean(encrypted_e)
         v_encrypt=np.dot(self.mat, encrypted_e)
-        print(v_encrypt)
 
-        self.send_response(200)
-        self.send_header('content-type', 'data')
-        self.send_header('Set-Cookie', 'suid='+self.suid_str)
-        self.end_headers()
         data={}
         data["BlindVector"]= [(str(x.ciphertext()), x.exponent) for x in v_encrypt]
-        self.wfile.write(json.dumps(data).encode())
+        self.__sendResponse(data)
 
+        self.k=self.k+1
         self.__storeData()
 
+    def announceResult(self):
+        f=np.zeros(self.Q_len, int)
+        for j in range(self.Q_len):
+            ind=(j+self.r_a[self.k])%self.Q_len
+            f[ind]=j
+
+        data={}
+        data["BlindVector"]=f
+        print(f)
+        self.__sendResponse(data)
+        
     #Store data in redis db to retrive them in the next GET request   
     def __storeData(self):    
         db_data={'r_a': self.r_a, 'k': self.k}
@@ -123,6 +126,15 @@ class OTHandler(SimpleHTTPRequestHandler):
         self.r_a=db_data['r_a']
         self.k=db_data['k']
 
+    def __sendResponse(self, data):
+        self.send_response(200)
+        self.send_header('content-type', 'data')
+        self.send_header('Set-Cookie', 'suid='+self.suid_str)
+        self.end_headers()
+        if self.k==0 or self.k==9:
+            self.wfile.write(json.dumps(data, cls=NumpyArrayEncoder).encode())
+        else:
+            self.wfile.write(json.dumps(data).encode())
 
 class NumpyArrayEncoder(json.JSONEncoder):
     def default(self, obj):

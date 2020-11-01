@@ -18,22 +18,15 @@ connection=HTTPSConnection('127.0.0.1', 4443)
 
 #First GET request to start the OT run
 connection.request('GET', '/')
+response=connection.getresponse()
+print(response)
+data=json.loads(response.read())
+Q_len=data["CardState"]
+vet=data["BlindVector"]
+r_b=vet[0]
 
-for i in range(len(trace)+1):
-    #Server's response containing the blinded vector and cardinality of states set
-    response=connection.getresponse()
-
-    data=(response.read())
-    data=json.loads(data)
-
-    if i==0:
-        Q_len=data["CardState"]
-        vet=data["BlindVector"]
-    else:
-        en_vet=[paillier.EncryptedNumber(pubkey, int(x[0]), int(x[1])) for x in data['BlindVector']]
-        vet=[privkey.decrypt(x) for x in en_vet]
-    r_b=vet[0]
-
+#KStateTransition, core of the protocol
+for i in trace:
     #Binary vector of Q_len lenght
     binv=np.zeros(Q_len, int)
     binv[r_b]=1
@@ -41,10 +34,24 @@ for i in range(len(trace)+1):
     data={}
     data["PublicKey"]={'n': pubkey.n}
     data["CipherText"]= [(str(x.ciphertext()), x.exponent) for x in ciphertext]
+    data["TraceLength"]=len(trace)
     ser_data=json.dumps(data)
     headers={'Content-length': len(ser_data), 'Cookie': response.headers['Set-Cookie']}
     print(headers)
     connection.request('GET', '/', ser_data.encode(), headers=headers)
-    print("i'm here")
-connection.close()
+    print("i'm here: "+str(i))
+
+    #Server's response containing the blinded vector and cardinality of states set
+    response=connection.getresponse()
+    print(response)
+    data=json.loads(response.read())
+
+    en_vet=[paillier.EncryptedNumber(pubkey, int(x[0]), int(x[1])) for x in data['BlindVector']]
+    vet=[privkey.decrypt(x) for x in en_vet]
+    r_b=vet[0]
+
+for x in vet:
+    print(x)
+
 print("i have finished")
+connection.close()
