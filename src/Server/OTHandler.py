@@ -40,12 +40,16 @@ class OTHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         cookie=self.headers.get('Cookie')
+        result=self.headers.get('Result')
         #Execution of OT
         if cookie==None :
             self.FirstStateTransition()
-        else:
+        elif result=='False':
             self.suid_str=cookie[5:]
             self.KStateTransition()
+        else:
+            self.suid_str=cookie[5:]
+            self.announceResult()
 
 
     #First subprotocol of the run of OT on automata
@@ -105,11 +109,14 @@ class OTHandler(SimpleHTTPRequestHandler):
         self.k=self.k+1
         self.__storeData()
 
+    #After the consumption of the trace, we can announce the result
     def announceResult(self):
+        self.__retrieveData()
         f=np.zeros(self.Q_len, int)
         for j in range(self.Q_len):
             ind=(j+self.r_a[self.k])%self.Q_len
-            f[ind]=j
+            if self.automata.accept_states.count(self.automata.states[j]):
+                f[ind]=1
 
         data={}
         data["BlindVector"]=f
@@ -118,20 +125,21 @@ class OTHandler(SimpleHTTPRequestHandler):
         
     #Store data in redis db to retrive them in the next GET request   
     def __storeData(self):    
-        db_data={'r_a': self.r_a, 'k': self.k}
+        db_data={'r_a': self.r_a, 'k': self.k, 'trace_length': self.t_len}
         self.redis_client.hset('session:1', self.suid_str, json.dumps(db_data))
 
     def __retrieveData(self):
         db_data=json.loads(self.redis_client.hget('session:1', self.suid_str).decode('utf-8'))
         self.r_a=db_data['r_a']
         self.k=db_data['k']
+        self.t_len=db_data['trace_length']
 
     def __sendResponse(self, data):
         self.send_response(200)
         self.send_header('content-type', 'data')
         self.send_header('Set-Cookie', 'suid='+self.suid_str)
         self.end_headers()
-        if self.k==0 or self.k==9:
+        if self.k==0 or self.k==self.t_len:
             self.wfile.write(json.dumps(data, cls=NumpyArrayEncoder).encode())
         else:
             self.wfile.write(json.dumps(data).encode())

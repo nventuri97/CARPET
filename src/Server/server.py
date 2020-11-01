@@ -12,7 +12,8 @@ class ThreadedHTTPSServer(ThreadingMixIn, HTTPServer):
 
 #Inizialization of DFS and creation of the automata required
 states=['0', '1']
-automata=DFS(states)
+acceptanceState=['0']
+automata=DFS(states, acceptanceState)
 
 #transition form (name method, source state, destination state, conditions to call the method)
 automata.machine.add_transition('a_less', '0', '0', 'a(-)')

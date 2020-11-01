@@ -6,7 +6,7 @@ import numpy as np
 from phe import paillier
 
 #Example trace
-trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(-)','s(-)']
+trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(-)']
 
 #New pailler cipher to encrypt data to send
 pubkey, privkey=paillier.generate_paillier_keypair()
@@ -36,7 +36,7 @@ for i in trace:
     data["CipherText"]= [(str(x.ciphertext()), x.exponent) for x in ciphertext]
     data["TraceLength"]=len(trace)
     ser_data=json.dumps(data)
-    headers={'Content-length': len(ser_data), 'Cookie': response.headers['Set-Cookie']}
+    headers={'Content-length': len(ser_data), 'Cookie': response.headers['Set-Cookie'], 'Result': False}
     print(headers)
     connection.request('GET', '/', ser_data.encode(), headers=headers)
     print("i'm here: "+str(i))
@@ -50,8 +50,13 @@ for i in trace:
     vet=[privkey.decrypt(x) for x in en_vet]
     r_b=vet[0]
 
-for x in vet:
-    print(x)
+headers={'Content-length': 0, 'Cookie': response.headers['Set-Cookie'], 'Result': True}
+connection.request('GET', '/', headers=headers)
+response=connection.getresponse()
+print(response)
+data=json.loads(response.read())
+vet=data["BlindVector"]
+print(r_b)
 
 print("i have finished")
 connection.close()

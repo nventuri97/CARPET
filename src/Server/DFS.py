@@ -9,8 +9,9 @@ class DFS(object):
     alphabet=['a(-)', 'a(+)', 's(-)', 's(+)', 'v(-)', 'v(+)']
     callback=['a_less', 'a_plus', 's_less', 's_plus', 'v_less', 'v_plus']
 
-    def __init__(self, states):
+    def __init__(self, states, accept_states):
         self.states=states
+        self.accept_states=accept_states
         self.machine=Machine(model=self, states=states, initial='0', auto_transitions=False)
 
     #Method to generate a matrix which represent the transition function
