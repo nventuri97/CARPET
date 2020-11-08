@@ -13,8 +13,11 @@ class ThreadedHTTPSServer(ThreadingMixIn, HTTPServer):
 #Inizialization of DFS and creation of the automata required
 states=['0', '1']
 acceptanceState=['0']
-automata=DFS(states, acceptanceState)
-
+#This alphabet is choosen to implement a DFS using in
+#a COVID-19 application
+#alphabet encoding a(-)=0, a(+)=1, s(-)=2, s(+)=3, v(-)=4, v(+)=5
+alphabet=['a(-)', 'a(+)', 's(-)', 's(+)', 'v(-)', 'v(+)']
+automata=DFS(states, acceptanceState, alphabet)
 #transition form (name method, source state, destination state, conditions to call the method)
 automata.machine.add_transition('a_less', '0', '0', 'a(-)')
 automata.machine.add_transition('a_plus', '0', '1', 'a(+)')

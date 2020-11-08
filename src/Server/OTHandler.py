@@ -54,12 +54,19 @@ class OTHandler(SimpleHTTPRequestHandler):
 
     #First subprotocol of the run of OT on automata
     def FirstStateTransition(self):
-        self.r_a.append(random.randint(0, self.Q_len))
+        print("#######################First State Transistion############################")
+        self.t_len=int(self.headers.get('TraceLength'))
+        self.r_a.append(random.randint(0, self.Q_len-1))
+        print("---r_a---")
+        print(self.r_a)
         v=np.zeros(self.Al_len, int)
         #Blinds element of vector v with the random generated
         for i in range(0,self.Al_len):
             v[i]=(self.mat[i][0]+self.r_a[self.k])%self.Q_len
-
+        print("---Matrix Transition---")
+        print(self.mat)
+        print("---Blinded vector---")
+        print(v)
         #Setting session cookie
         suid=uuid.uuid4()
         print(suid)
@@ -73,27 +80,34 @@ class OTHandler(SimpleHTTPRequestHandler):
         data={"CardState": self.Q_len, "BlindVector": v}
         self.__sendResponse(data)
 
+        self.k=self.k+1
+
         #Increment the transition number
         self.__storeData()
         
     
     #Subprotocol for the k-th state transition
     def KStateTransition(self):
+        print("#######################K-th State Transistion#############################")
+        print("---Matrix transition---")
+        print(self.mat)
         self.__retrieveData()
-        self.r_a.append(random.randint(0,self.Q_len))
+        self.r_a.append(random.randint(0,self.Q_len-1))
+        print("---r_a---")
         print(self.r_a)
         #Blinding all the matrix element
         for i in range(0, self.Al_len):
             for j in range(0, self.Q_len):
                 self.mat[i][j]=(self.mat[i][j]+self.r_a[self.k])%self.Q_len
             #Shift left of r_a(k-1) position
-            np.roll(self.mat[i], -self.r_a[self.k-1])
+            self.mat[i]=np.roll(self.mat[i], -self.r_a[self.k-1])
+        print("---Rolled matrix---")
+        print(self.mat)
         
         #Now i have to read data sent from client
         length = int(self.headers.get('Content-length'))
         data=self.rfile.read(length)
         recive_data=json.loads(data)
-        self.t_len=recive_data['TraceLength']
         puk=recive_data['PublicKey']
         public_key=paillier.PaillierPublicKey(n=int(puk['n']))
         encrypted_e=[paillier.EncryptedNumber(public_key, int(x[0]), int(x[1])) for x in recive_data['CipherText']]
@@ -106,20 +120,24 @@ class OTHandler(SimpleHTTPRequestHandler):
         data["BlindVector"]= [(str(x.ciphertext()), x.exponent) for x in v_encrypt]
         self.__sendResponse(data)
 
-        self.k=self.k+1
+        if self.k!=self.t_len:
+            self.k=self.k+1
         self.__storeData()
 
     #After the consumption of the trace, we can announce the result
     def announceResult(self):
+        print("#######################Announcement of Result#############################")
         self.__retrieveData()
         f=np.zeros(self.Q_len, int)
+        print("---Element r_a[N]: "+str(self.r_a[self.k-1])+"---")
         for j in range(self.Q_len):
-            ind=(j+self.r_a[self.k])%self.Q_len
-            if self.automata.accept_states.count(self.automata.states[j]):
+            ind=(j+self.r_a[self.k-1])%self.Q_len
+            if self.automata.states[j] in self.automata.accept_states:
                 f[ind]=1
 
         data={}
         data["BlindVector"]=f
+        print("---Result vector---")
         print(f)
         self.__sendResponse(data)
         
