@@ -33,7 +33,7 @@ automata.machine.add_transition('v_less', '1', '1', 'v(-)')
 automata.machine.add_transition('s_less', '1', '0', 's(-)')
 
 #Inizialization of HTTPS server
-server_address = ('localhost', 4443)
+server_address = ('127.0.0.1',  4443)
 otHandler=partial(OTHandler, automata)
 httpd =ThreadedHTTPSServer(server_address, otHandler)
 httpd.socket = ssl.wrap_socket(httpd.socket, server_side=True, keyfile='./key.pem', certfile='./cert.pem', ssl_version=ssl.PROTOCOL_TLS)

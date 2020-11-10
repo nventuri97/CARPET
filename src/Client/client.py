@@ -7,8 +7,8 @@ from phe import paillier
 
 #Example trace
 #trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(-)']
-#trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(+)']
-trace=['s(+)', 's(-)']
+trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(+)']
+#trace=['s(+)', 's(-)']
 enc_trace=[]
 for i in trace:
     if i=='a(-)':

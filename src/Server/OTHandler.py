@@ -7,8 +7,7 @@ from http.cookies import SimpleCookie
 import redis
 import numpy as np
 import json, random, uuid
-from phe import paillier    
-from socket import error as SocketError
+from phe import paillier
 
 class OTHandler(SimpleHTTPRequestHandler):
 

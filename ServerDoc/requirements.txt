@@ -1,0 +1,4 @@
+phe==1.4.0
+redis==3.5.3
+numpy==1.18.3
+transitions==0.8.3
