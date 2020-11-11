@@ -11,11 +11,6 @@ services:
     web: 
         build:
             context: .
-            dockerfile: ./ServerDoc/Dockerfile
+            dockerfile: ./Dockerfile
         ports:
             - "4443:4443"
-
-    #client:
-    #    build:
-    #        context: .
-    #        dockerfile: ./ClientDoc/Dockerfile

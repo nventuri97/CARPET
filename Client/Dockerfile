@@ -5,13 +5,15 @@ FROM python:3.6.9
 WORKDIR /code
 
 # copy the dependencies file to the working directory
-COPY ./ClientDoc/requirements.txt .
+COPY ./requirements.txt .
 
 #install dependecies
 RUN pip install -r requirements.txt
 
+EXPOSE 4443
+
 # copy the content of the local src directory to the working directory
-COPY ./src/Client/ .
+COPY ./src .
 
 # command to run on container start
 CMD ["python", "./client.py"]
