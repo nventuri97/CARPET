@@ -7,9 +7,15 @@ services:
         volumes:
             - ./config/redis.conf:/redis.conf
         command: [ "redis-server", "/redis.conf" ]
+        
     web: 
         build:
             context: .
             dockerfile: ./ServerDoc/Dockerfile
         ports:
             - "4443:4443"
+
+    #client:
+    #    build:
+    #        context: .
+    #        dockerfile: ./ClientDoc/Dockerfile
