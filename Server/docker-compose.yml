@@ -7,10 +7,13 @@ services:
         volumes:
             - ./config/redis.conf:/redis.conf
         command: [ "redis-server", "/redis.conf" ]
-        
+        container_name: carpet_redis
+              
     web: 
         build:
             context: .
             dockerfile: ./Dockerfile
         ports:
-            - "4443:4443"
+            - 4443:4443
+        network_mode: host
+        container_name: carpet_server

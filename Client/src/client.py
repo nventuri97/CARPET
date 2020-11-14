@@ -6,9 +6,8 @@ import numpy as np
 from phe import paillier
 
 #Example trace
-#trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(-)']
-trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(+)']
-#trace=['s(+)', 's(-)']
+trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(-)']
+#trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(+)']
 enc_trace=[]
 for i in trace:
     if i=='a(-)':
@@ -31,6 +30,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 #Connection with server
 connection=HTTPSConnection('127.0.0.1', 4443)
+print(connection)
 
 headers={'TraceLength': len(trace)}
 #First GET request to start the OT run
