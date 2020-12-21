@@ -5,10 +5,15 @@ import hashlib, ssl, json, random
 import numpy as np
 from phe import paillier
 
-#Example trace
-trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(-)']
-#trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(+)']
+#Example trace, list of finite character from the alphabet
+#trace=['a(-)','a(-)','s(-)','v(-)','s(+)','s(+)','a(+)','s(+)','s(+)','s(-)']
+trace=['a(-)','a(-)','s(-)','v(-)','v(+)','v(+)','a(+)','s(+)','s(+)','s(+)']
+
+print(trace)
+
 enc_trace=[]
+#Ecoding of the trace needed to address the array
+#we choose number from 0 to 5 following the order of the alphabet
 for i in trace:
     if i=='a(-)':
         enc_trace.append(0)
@@ -35,12 +40,16 @@ print(connection)
 headers={'TraceLength': len(trace)}
 #First GET request to start the OT run
 connection.request('GET', '/', headers=headers)
+
 response=connection.getresponse()
 print(response)
 data=json.loads(response.read())
+#Cardinality of the set of states
 Q_len=data["CardState"]
+#Blinded vector
 vet=data["BlindVector"]
 r_b=vet[enc_trace[0]]
+
 print("#####First transition#####\n---Blinded vector receive---")
 print(vet)
 
@@ -51,13 +60,23 @@ for i in enc_trace[1:]:
     #Binary vector of Q_len lenght
     binv=np.zeros(Q_len, int)
     binv[r_b]=1
+
     print("---Binary vector send---")
     print(binv)
+
+    #Encryption of the data to send to the server
     ciphertext=[pubkey.encrypt(int(x)) for x in binv]
+
     data={}
     data["PublicKey"]={'n': pubkey.n}
     data["CipherText"]= [(str(x.ciphertext()), x.exponent) for x in ciphertext]
     ser_data=json.dumps(data)
+
+    #Headers={
+    #   Content-length: length of the data to send
+    #   Cookie: the suid sent by the server to identify the client
+    #   Result: boolean flag that indicates the end of the protocol
+    #}
     headers={'Content-length': len(ser_data), 'Cookie': response.headers['Set-Cookie'], 'Result': False}
     connection.request('GET', '/', ser_data.encode(), headers=headers)
 
@@ -65,14 +84,18 @@ for i in enc_trace[1:]:
     response=connection.getresponse()
     data=json.loads(response.read())
 
+    #Rebuild and decryption of the data received from the previous request
     en_vet=[paillier.EncryptedNumber(pubkey, int(x[0]), int(x[1])) for x in data['BlindVector']]
     vet=[privkey.decrypt(x) for x in en_vet]
     print("---Vector receive---")
     print(vet)
     r_b=vet[i]
 
+#Last GET request that communicates the end of the trace of the user
 headers={'Content-length': 0, 'Cookie': response.headers['Set-Cookie'], 'Result': True}
 connection.request('GET', '/', headers=headers)
+
+#Response containing the result of the OT protocol
 response=connection.getresponse()
 data=json.loads(response.read())
 f=data["BlindVector"]
