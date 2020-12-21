@@ -102,5 +102,5 @@ f=data["BlindVector"]
 print("#####Result#####")
 print(f[r_b])
 
-print("i have finished")
+print("I have finished")
 connection.close()

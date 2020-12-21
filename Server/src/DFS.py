@@ -5,6 +5,14 @@ from operator import itemgetter, attrgetter
 class DFS(object):
 
     def __init__(self, states, accept_states, alphabet):
+        #Attributes:
+        #alphabet: the alphabet where the automaton is defined
+        #states: the set of the states where the automaton is defined
+        #accept_states: the set of the acceptance states where the automaton ends with
+        #               an acceptance result
+        #machine: an instance of the Machine class to define the FSM
+        #for more infomation about Machine class visit github.com/pytransitions/transitions
+
         self.alphabet=alphabet
         self.states=states
         self.accept_states=accept_states
@@ -29,8 +37,7 @@ class DFS(object):
                 if trans.source==state :
                     index=self.alphabet.index(trans.conditions[0].func)
                     trans_mat[int(state)][index]=trans.dest
-                else:
-                    break
             sorted_tran.reverse()
         
+        #Return the transposed matrix 
         return trans_mat.transpose() 
